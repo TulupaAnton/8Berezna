@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Видео</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0a0b;
+        --surface: #111114;
+        --border: rgba(255, 255, 255, 0.07);
+        --accent: #c9a96e;
+        --accent-soft: rgba(201, 169, 110, 0.12);
+        --text: #e8e4dc;
+        --muted: #6b6760;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 300;
+        overflow-x: hidden;
+      }
+
+      /* Ambient background */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+            ellipse 80% 50% at 50% -10%,
+            rgba(201, 169, 110, 0.08) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 40% 40% at 80% 80%,
+            rgba(100, 80, 160, 0.05) 0%,
+            transparent 60%
+          );
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .grain {
+        position: fixed;
+        inset: 0;
+        opacity: 0.025;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .page {
+        position: relative;
+        z-index: 2;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+      }
+
+      /* Header */
+      .header {
+        text-align: center;
+        margin-bottom: 48px;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 16px;
+      }
+
+      .eyebrow::before,
+      .eyebrow::after {
+        content: '';
+        display: block;
+        width: 32px;
+        height: 1px;
+        background: var(--accent);
+        opacity: 0.5;
+      }
+
+      .title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(2.2rem, 5vw, 3.8rem);
+        font-weight: 300;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+        color: var(--text);
+      }
+
+      .title em {
+        font-style: italic;
+        color: var(--accent);
+      }
+
+      /* Video container */
+      .video-wrap {
+        width: 100%;
+        max-width: 900px;
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+        animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+      }
+
+      .video-card {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03),
+          0 40px 80px rgba(0, 0, 0, 0.6), 0 0 100px rgba(201, 169, 110, 0.04);
+      }
+
+      /* Top bar */
+      .video-topbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot-r {
+        background: #ff5f57;
+      }
+      .dot-y {
+        background: #febc2e;
+      }
+      .dot-g {
+        background: #28c840;
+      }
+
+      /* Aspect ratio wrapper */
+      .video-ratio {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        background: #000;
+      }
+
+      .video-ratio iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+      }
+
+      /* Bottom info */
+      .video-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+        border-top: 1px solid var(--border);
+      }
+
+      .video-label {
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.05em;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        border: 1px solid rgba(201, 169, 110, 0.2);
+        font-size: 11px;
+        color: var(--accent);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      /* Corner decorations */
+      .corner {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        pointer-events: none;
+      }
+      .corner-tl {
+        top: -1px;
+        left: -1px;
+        border-top: 2px solid var(--accent);
+        border-left: 2px solid var(--accent);
+        border-radius: 16px 0 0 0;
+      }
+      .corner-tr {
+        top: -1px;
+        right: -1px;
+        border-top: 2px solid var(--accent);
+        border-right: 2px solid var(--accent);
+        border-radius: 0 16px 0 0;
+      }
+      .corner-bl {
+        bottom: -1px;
+        left: -1px;
+        border-bottom: 2px solid var(--accent);
+        border-left: 2px solid var(--accent);
+        border-radius: 0 0 0 16px;
+      }
+      .corner-br {
+        bottom: -1px;
+        right: -1px;
+        border-bottom: 2px solid var(--accent);
+        border-right: 2px solid var(--accent);
+        border-radius: 0 0 16px 0;
+      }
+
+      /* Hint below */
+      .hint {
+        margin-top: 28px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+        letter-spacing: 0.05em;
+        opacity: 0;
+        animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards;
+      }
+
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
+      }
+
+      @media (max-width: 600px) {
+        .header {
+          margin-bottom: 32px;
+        }
+        .video-footer {
+          flex-direction: column;
+          gap: 10px;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain"></div>
+    <div class="page">
+      <header class="header">
+        <h1 class="title">Міні<em>фільм</em></h1>
+      </header>
+
+      <div class="video-wrap">
+        <div class="video-card">
+          <div class="corner corner-tl"></div>
+          <div class="corner corner-tr"></div>
+          <div class="corner corner-bl"></div>
+          <div class="corner corner-br"></div>
+
+          <div class="video-topbar">
+            <div class="dot dot-r"></div>
+            <div class="dot dot-y"></div>
+            <div class="dot dot-g"></div>
+          </div>
+
+          <div class="video-ratio">
+            <iframe
+              src="https://drive.google.com/file/d/1kn9ddazQvODUxQw2AlkQny98QczK7kXk/preview"
+              allow="autoplay; fullscreen"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+        </div>
+      </div>
+
+      <p class="hint">Нажмите на видео для воспроизведения</p>
+    </div>
+  </body>
+</html>
