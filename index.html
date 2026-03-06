@@ -175,6 +175,27 @@
         }
       }
 
+      /* ---- LANDSCAPE FULLSCREEN MODE ---- */
+      .video-ratio.landscape-fs {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        padding-bottom: 0 !important;
+        z-index: 9999 !important;
+        border-radius: 0 !important;
+        background: #000 !important;
+      }
+      .video-ratio.landscape-fs iframe {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      body.landscape-active {
+        overflow: hidden;
+      }
+
       .corner {
         position: absolute;
         width: 20px;
@@ -278,7 +299,10 @@
         </div>
       </div>
 
-      <p class="hint">Натисніть для відтворення &nbsp;·&nbsp; розгорнути ↙</p>
+      <p class="hint">
+        Натисніть для відтворення &nbsp;·&nbsp; поверніть телефон для повного
+        екрану
+      </p>
     </div>
 
     <script>
@@ -292,7 +316,13 @@
       const COMPRESS =
         '<polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="10" y1="14" x2="3" y2="21"></line><line x1="21" y1="3" x2="14" y2="10"></line>'
 
-      function isFS() {
+      function isMobile() {
+        return window.innerWidth <= 768 || 'ontouchstart' in window
+      }
+      function isLandscape() {
+        return window.innerWidth > window.innerHeight
+      }
+      function isNativeFS() {
         return !!(
           document.fullscreenElement ||
           document.webkitFullscreenElement ||
@@ -300,34 +330,69 @@
         )
       }
 
-      function goFS(el) {
+      // --- CSS-based landscape fullscreen (works on all mobile browsers) ---
+      function enterLandscapeFS() {
+        ratio.classList.add('landscape-fs')
+        document.body.classList.add('landscape-active')
+        icon.innerHTML = COMPRESS
+      }
+      function exitLandscapeFS() {
+        ratio.classList.remove('landscape-fs')
+        document.body.classList.remove('landscape-active')
+        icon.innerHTML = EXPAND
+      }
+      function isLandscapeFS() {
+        return ratio.classList.contains('landscape-fs')
+      }
+
+      // --- Native Fullscreen API (optional, as fallback for manual button) ---
+      function goNativeFS(el) {
         if (el.requestFullscreen) return el.requestFullscreen()
         if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen()
         if (el.mozRequestFullScreen) return el.mozRequestFullScreen()
+        return Promise.reject()
       }
-
-      function exitFS() {
+      function exitNativeFS() {
         if (document.exitFullscreen) return document.exitFullscreen()
         if (document.webkitExitFullscreen)
           return document.webkitExitFullscreen()
         if (document.mozCancelFullScreen) return document.mozCancelFullScreen()
       }
 
+      // Manual button
       btn.addEventListener('click', () => {
-        if (isFS()) {
-          exitFS()
+        if (isLandscapeFS() || isNativeFS()) {
+          exitLandscapeFS()
+          if (isNativeFS()) exitNativeFS()
         } else {
-          goFS(frame).catch(() => goFS(ratio))
+          goNativeFS(frame).catch(() => enterLandscapeFS())
         }
       })
 
+      // Auto fullscreen on rotate
+      function handleOrientation() {
+        if (!isMobile()) return
+        if (isLandscape()) {
+          enterLandscapeFS()
+        } else {
+          exitLandscapeFS()
+        }
+      }
+
+      // Use screen.orientation API if available, fallback to resize
+      if (screen.orientation) {
+        screen.orientation.addEventListener('change', handleOrientation)
+      }
+      window.addEventListener('resize', handleOrientation)
+
+      // Native FS change sync
       ;[
         'fullscreenchange',
         'webkitfullscreenchange',
         'mozfullscreenchange'
       ].forEach(e => {
         document.addEventListener(e, () => {
-          icon.innerHTML = isFS() ? COMPRESS : EXPAND
+          if (!isNativeFS() && !isLandscape()) exitLandscapeFS()
         })
       })
     </script>
