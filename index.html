@@ -140,62 +140,6 @@
         border: none;
         display: block;
       }
-
-      /* Fullscreen button — only on mobile */
-      .fullscreen-btn {
-        display: none;
-        position: absolute;
-        bottom: 12px;
-        right: 12px;
-        z-index: 10;
-        background: rgba(0, 0, 0, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 8px;
-        padding: 9px;
-        cursor: pointer;
-        color: #fff;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        transition: background 0.2s;
-      }
-      .fullscreen-btn:active {
-        background: rgba(201, 169, 110, 0.3);
-      }
-      .fullscreen-btn svg {
-        display: block;
-      }
-      @media (max-width: 768px) {
-        .fullscreen-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .header {
-          margin-bottom: 32px;
-        }
-      }
-
-      /* ---- LANDSCAPE FULLSCREEN MODE ---- */
-      .video-ratio.landscape-fs {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        padding-bottom: 0 !important;
-        z-index: 9999 !important;
-        border-radius: 0 !important;
-        background: #000 !important;
-      }
-      .video-ratio.landscape-fs iframe {
-        position: absolute !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-      }
-      body.landscape-active {
-        overflow: hidden;
-      }
-
       .corner {
         position: absolute;
         width: 20px;
@@ -245,6 +189,11 @@
           transform: none;
         }
       }
+      @media (max-width: 600px) {
+        .header {
+          margin-bottom: 32px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -267,134 +216,17 @@
             <div class="dot dot-g"></div>
           </div>
 
-          <div class="video-ratio" id="videoRatio">
+          <div class="video-ratio">
             <iframe
-              id="videoFrame"
               src="https://drive.google.com/file/d/1kn9ddazQvODUxQw2AlkQny98QczK7kXk/preview"
-              allow="autoplay; fullscreen"
+              allow="autoplay"
               allowfullscreen
-              webkitallowfullscreen
-              mozallowfullscreen
             ></iframe>
-
-            <button class="fullscreen-btn" id="fsBtn" aria-label="Fullscreen">
-              <svg
-                id="fsIcon"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <polyline points="9 21 3 21 3 15"></polyline>
-                <line x1="21" y1="3" x2="14" y2="10"></line>
-                <line x1="3" y1="21" x2="10" y2="14"></line>
-              </svg>
-            </button>
           </div>
         </div>
       </div>
 
-      <p class="hint">
-        Натисніть для відтворення &nbsp;·&nbsp; поверніть телефон для повного
-        екрану
-      </p>
+      <p class="hint">Натисніть для відтворення</p>
     </div>
-
-    <script>
-      const btn = document.getElementById('fsBtn')
-      const ratio = document.getElementById('videoRatio')
-      const frame = document.getElementById('videoFrame')
-      const icon = document.getElementById('fsIcon')
-
-      const EXPAND =
-        '<polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line>'
-      const COMPRESS =
-        '<polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="10" y1="14" x2="3" y2="21"></line><line x1="21" y1="3" x2="14" y2="10"></line>'
-
-      function isMobile() {
-        return window.innerWidth <= 768 || 'ontouchstart' in window
-      }
-      function isLandscape() {
-        return window.innerWidth > window.innerHeight
-      }
-      function isNativeFS() {
-        return !!(
-          document.fullscreenElement ||
-          document.webkitFullscreenElement ||
-          document.mozFullScreenElement
-        )
-      }
-
-      // --- CSS-based landscape fullscreen (works on all mobile browsers) ---
-      function enterLandscapeFS() {
-        ratio.classList.add('landscape-fs')
-        document.body.classList.add('landscape-active')
-        icon.innerHTML = COMPRESS
-      }
-      function exitLandscapeFS() {
-        ratio.classList.remove('landscape-fs')
-        document.body.classList.remove('landscape-active')
-        icon.innerHTML = EXPAND
-      }
-      function isLandscapeFS() {
-        return ratio.classList.contains('landscape-fs')
-      }
-
-      // --- Native Fullscreen API (optional, as fallback for manual button) ---
-      function goNativeFS(el) {
-        if (el.requestFullscreen) return el.requestFullscreen()
-        if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen()
-        if (el.mozRequestFullScreen) return el.mozRequestFullScreen()
-        return Promise.reject()
-      }
-      function exitNativeFS() {
-        if (document.exitFullscreen) return document.exitFullscreen()
-        if (document.webkitExitFullscreen)
-          return document.webkitExitFullscreen()
-        if (document.mozCancelFullScreen) return document.mozCancelFullScreen()
-      }
-
-      // Manual button
-      btn.addEventListener('click', () => {
-        if (isLandscapeFS() || isNativeFS()) {
-          exitLandscapeFS()
-          if (isNativeFS()) exitNativeFS()
-        } else {
-          goNativeFS(frame).catch(() => enterLandscapeFS())
-        }
-      })
-
-      // Auto fullscreen on rotate
-      function handleOrientation() {
-        if (!isMobile()) return
-        if (isLandscape()) {
-          enterLandscapeFS()
-        } else {
-          exitLandscapeFS()
-        }
-      }
-
-      // Use screen.orientation API if available, fallback to resize
-      if (screen.orientation) {
-        screen.orientation.addEventListener('change', handleOrientation)
-      }
-      window.addEventListener('resize', handleOrientation)
-
-      // Native FS change sync
-      ;[
-        'fullscreenchange',
-        'webkitfullscreenchange',
-        'mozfullscreenchange'
-      ].forEach(e => {
-        document.addEventListener(e, () => {
-          if (!isNativeFS() && !isLandscape()) exitLandscapeFS()
-        })
-      })
-    </script>
   </body>
 </html>
